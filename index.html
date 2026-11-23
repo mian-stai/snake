@@ -2,233 +2,241 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
-<title>贪吃蛇</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>贪吃蛇完整版</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{overflow:hidden;background:#111;color:#fff;font-family:sans-serif;touch-action:none}
+body{overflow:hidden;background:#0f0f1a;font-family:sans-serif;color:#fff;touch-action:none}
 canvas{display:block}
-.ui{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.5);padding:10px;border-radius:8px;font-size:16px}
-.screen{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10}
-.btn{padding:12px 30px;font-size:18px;background:#4caf50;color:#fff;border:none;border-radius:25px;margin-top:20px;cursor:pointer}
+.ui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;padding:15px;display:flex;flex-direction:column;justify-content:space-between}
+.top{display:flex;justify-content:space-between}
+.panel{background:rgba(0,0,0,.6);padding:12px 20px;border-radius:10px;font-size:18px;font-weight:bold}
+.rank{background:rgba(0,0,0,.6);padding:10px;border-radius:10px;width:140px;font-size:12px}
+.rank h3{font-size:13px;text-align:center;color:#ffd700;margin-bottom:5px}
+.ri{display:flex;justify-content:space-between;margin:2px 0}
+.ri.me{color:#2ed573;font-weight:bold}
+.screen{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(15,15,26,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:auto;z-index:10}
+h1{font-size:32px;color:#2ed573;margin-bottom:15px}
+.btn{padding:12px 35px;font-size:16px;background:#2ed573;color:#fff;border:none;border-radius:25px;cursor:pointer;font-weight:bold;margin-top:15px}
 .hide{display:none!important}
-#joy{position:absolute;bottom:30px;left:30px;width:100px;height:100px;background:rgba(255,255,255,.1);border-radius:50%;border:2px solid #fff;display:none;z-index:5}
-#knob{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;background:#4caf50;border-radius:50%}
-#boostBtn{position:absolute;bottom:40px;right:30px;width:70px;height:70px;background:rgba(255,0,0,.5);border-radius:50%;border:2px solid #fff;display:none;z-index:5;text-align:center;line-height:70px;font-weight:bold}
+.hint{margin-top:15px;color:#888;font-size:12px;text-align:center;line-height:1.6}
+#joy{position:absolute;bottom:30px;left:30px;width:120px;height:120px;background:rgba(255,255,255,.1);border-radius:50%;border:2px solid rgba(255,255,255,.3);pointer-events:auto;display:none;z-index:5}
+#knob{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:50px;height:50px;background:rgba(46,213,115,.8);border-radius:50%}
+#boost{position:absolute;bottom:40px;right:30px;width:80px;height:80px;background:rgba(255,71,87,.6);border-radius:50%;border:2px solid rgba(255,255,255,.3);pointer-events:auto;display:none;z-index:5;align-items:center;justify-content:center;font-size:14px;font-weight:bold}
+.skin-box{display:flex;gap:15px;margin:20px 0;flex-wrap:wrap;justify-content:center}
+.skin{width:60px;height:60px;border-radius:12px;cursor:pointer;border:3px solid transparent;display:flex;align-items:center;justify-content:center;font-size:10px;text-align:center;padding:5px}
+.skin.active{border-color:#fff;transform:scale(1.1)}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
-<div class="ui" id="ui">长度: <span id="score">10</span></div>
-
-<div class="screen" id="startScreen">
-<h1>贪吃蛇</h1>
-<button class="btn" onclick="startGame()">开始游戏</button>
-<button class="btn" style="background:#666;font-size:14px;padding:8px 20px" onclick="toggleMute()" id="muteBtn">音乐: 开</button>
+<div class="ui hide" id="ui">
+<div class="top">
+<div class="panel">长度:<span id="sc">10</span></div>
+<div class="rank"><h3>排行榜</h3><div id="rl"></div></div>
 </div>
-
-<div class="screen hide" id="gameOverScreen">
-<h1 style="color:red">游戏结束</h1>
-<p>最终长度: <span id="finalScore">0</span></p>
-<button class="btn" onclick="startGame()">重新开始</button>
+<div class="hint" id="dh"></div>
 </div>
-
 <div id="joy"><div id="knob"></div></div>
-<div id="boostBtn">加速</div>
-
+<div id="boost">加速</div>
+<div class="screen" id="ss">
+<h1>贪吃蛇大作战</h1>
+<p style="color:#aaa;margin-bottom:8px">选择皮肤</p>
+<div class="skin-box">
+<div class="skin active" data-s="0" style="background:linear-gradient(45deg,#ff9a9e,#fecfef)">樱花</div>
+<div class="skin" data-s="1" style="background:linear-gradient(45deg,#a18cd1,#fbc2eb)">星空</div>
+<div class="skin" data-s="2" style="background:linear-gradient(45deg,#4facfe,#00f2fe)">海洋</div>
+<div class="skin" data-s="3" style="background:linear-gradient(45deg,#43e97b,#38f9d7)">翡翠</div>
+</div>
+<button class="btn" onclick="start()">开始游戏</button>
+</div>
+<div class="screen hide" id="gs">
+<h1 style="color:#ff4757">游戏结束</h1>
+<p style="font-size:18px;margin-bottom:15px">最终长度:<span id="fs" style="color:#fff;font-weight:bold">0</span></p>
+<button class="btn" onclick="start()">再来一局</button>
+</div>
 <script>
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
-let w, h;
+const c=document.getElementById('c'),x=c.getContext('2d');
+const $=id=>document.getElementById(id);
+const W=3000,FC=400,AC=25,MC=5;
+let w,h,cam={x:0,y:0},foods=[],snakes=[],mons=[],me,over=1,boost=0;
+let mob=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+let jAct=0,jAng=0,jId=null,selSkin=0;
 
-// --- 游戏状态 ---
-let snake = [], food = {}, dir = {x:1, y:0}, nextDir = {x:1, y:0};
-let score = 10, gameOver = false, isBoosting = false;
-let gridSize = 20;
+const SKINS=[
+{colors:['#ff9a9e','#fecfef','#ffecd2'],effect:'petal'},
+{colors:['#a18cd1','#fbc2eb','#e0c3fc'],effect:'star'},
+{colors:['#4facfe','#00f2fe','#89f7fe'],effect:'wave'},
+{colors:['#43e97b','#38f9d7','#a8ff78'],effect:'glow'}
+];
 
-// --- 动态帧率 ---
-let lastTime = 0, frameCount = 0, lastFpsTime = 0, targetFps = 60;
+function rs(){w=innerWidth;h=innerHeight;c.width=w;c.height=h}
+addEventListener('resize',rs);rs();
+const R=(a,b)=>Math.random()*(b-a)+a;
+const D=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 
-// --- 音频 ---
-let audioCtx, isMuted = false, bgmInterval;
-function initAudio() {
-    if (audioCtx) return;
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-}
-function playTone(freq, dur, type='square', vol=0.1) {
-    if (!audioCtx || isMuted) return;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = type; osc.frequency.value = freq;
-    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.start(); osc.stop(audioCtx.currentTime + dur);
-}
-function startBGM() {
-    if (!audioCtx || bgmInterval) return;
-    let step = 0;
-    const notes = [261, 293, 329, 349, 392, 440, 493, 523];
-    bgmInterval = setInterval(() => {
-        if (isMuted || gameOver) return;
-        playTone(notes[step % notes.length], 0.2, 'sine', 0.05);
-        step++;
-    }, 300);
-}
-function toggleMute() {
-    isMuted = !isMuted;
-    document.getElementById('muteBtn').innerText = isMuted ? '音乐: 关' : '音乐: 开';
+class Food{
+constructor(px,py,v=1,col='#fff'){this.x=px??R(0,W);this.y=py??R(0,W);this.v=v;this.col=col;this.r=Math.sqrt(v)*3+2}
+draw(){let sx=this.x-cam.x,sy=this.y-cam.y;if(sx<-20||sx>w+20||sy<-20||sy>h+20)return;x.fillStyle=this.col;x.beginPath();x.arc(sx,sy,this.r,0,7);x.fill()}
 }
 
-// --- 初始化 ---
-function resize() {
-    w = window.innerWidth; h = window.innerHeight;
-    canvas.width = w; canvas.height = h;
-}
-window.addEventListener('resize', resize);
-resize();
-
-function spawnFood() {
-    food = {
-        x: Math.floor(Math.random() * (w / gridSize)) * gridSize,
-        y: Math.floor(Math.random() * (h / gridSize)) * gridSize
-    };
-}
-
-function startGame() {
-    initAudio();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    
-    snake = [{x: 100, y: 100}, {x: 80, y: 100}, {x: 60, y: 100}];
-    dir = {x:1, y:0}; nextDir = {x:1, y:0};
-    score = 10; gameOver = false; isBoosting = false;
-    
-    document.getElementById('startScreen').classList.add('hide');
-    document.getElementById('gameOverScreen').classList.add('hide');
-    document.getElementById('ui').style.display = 'block';
-    
-    if (/Android|iPhone/i.test(navigator.userAgent)) {
-        document.getElementById('joy').style.display = 'block';
-        document.getElementById('boostBtn').style.display = 'block';
-    }
-    
-    spawnFood();
-    startBGM();
-    requestAnimationFrame(loop);
+class Mon{
+constructor(){this.reset()}
+reset(){this.x=R(200,W-200);this.y=R(200,W-200);this.r=15;this.sp=2.2;this.a=R(0,7);this.hp=3;this.al=1;this.wb=0}
+update(){
+if(!this.al||!me.al)return;
+let dx=me.s[0].x-this.x,dy=me.s[0].y-this.y,d=Math.hypot(dx,dy);
+if(d<600){this.a=Math.atan2(dy,dx);this.x+=Math.cos(this.a)*this.sp;this.y+=Math.sin(this.a)*this.sp}
+else{if(Math.random()<.02)this.a+=R(-.5,.5);this.x+=Math.cos(this.a)*this.sp*.5;this.y+=Math.sin(this.a)*this.sp*.5}
+if(this.x<0||this.x>W||this.y<0||this.y>W){this.x=Math.max(0,Math.min(W,this.x));this.y=Math.max(0,Math.min(W,this.y));this.a+=Math.PI}
+if(D(me.s[0],this)<me.r+this.r){this.hp--;if(this.hp<=0){this.al=0;for(let i=0;i<15;i++)foods.push(new Food(this.x+R(-30,30),this.y+R(-30,30),3,'#ff6b81'));setTimeout(()=>this.reset(),5e3)}}
+this.wb+=.1}
+draw(){
+if(!this.al)return;
+let sx=this.x-cam.x,sy=this.y-cam.y;if(sx<-50||sx>w+50||sy<-50||sy>h+50)return;
+let r=this.r+Math.sin(this.wb)*2;
+x.fillStyle='#ff4757';x.beginPath();x.arc(sx,sy,r,0,7);x.fill();
+x.fillStyle='#fff';let o=r*.4;
+x.beginPath();x.arc(sx+Math.cos(this.a-.5)*o,sy+Math.sin(this.a-.5)*o,4,0,7);x.fill();
+x.beginPath();x.arc(sx+Math.cos(this.a+.5)*o,sy+Math.sin(this.a+.5)*o,4,0,7);x.fill();
+x.fillStyle='#000';
+x.beginPath();x.arc(sx+Math.cos(this.a-.5)*o,sy+Math.sin(this.a-.5)*o,2,0,7);x.fill();
+x.beginPath();x.arc(sx+Math.cos(this.a+.5)*o,sy+Math.sin(this.a+.5)*o,2,0,7);x.fill();
+x.fillStyle='rgba(0,0,0,.5)';x.fillRect(sx-15,sy-r-12,30,5);
+x.fillStyle='#2ed573';x.fillRect(sx-15,sy-r-12,30*(this.hp/3),5)}
 }
 
-// --- 控制 ---
-document.addEventListener('keydown', e => {
-    if (e.key === 'ArrowUp' && dir.y === 0) nextDir = {x:0, y:-1};
-    if (e.key === 'ArrowDown' && dir.y === 0) nextDir = {x:0, y:1};
-    if (e.key === 'ArrowLeft' && dir.x === 0) nextDir = {x:-1, y:0};
-    if (e.key === 'ArrowRight' && dir.x === 0) nextDir = {x:1, y:0};
-    if (e.key === ' ') isBoosting = true;
+class Snake{
+constructor(p=0,skinIdx=0,nm=""){this.p=p;this.skin=SKINS[skinIdx];this.nm=nm||(p?"我":`玩家${Math.floor(Math.random()*9999)}`);this.reset()}
+reset(){
+this.s=[];let sx=R(200,W-200),sy=R(200,W-200);
+for(let i=0;i<10;i++)this.s.push({x:sx,y:sy});
+this.a=R(0,7);this.ta=this.a;this.sc=10;this.r=10;this.al=1;this.aiT=0;this.aiBoost=0;this.t=0}
+update(){
+if(!this.al)return;
+this.t+=0.05;
+let d=this.ta-this.a;
+while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;
+this.a+=d*(this.p?0.25:0.15);
+let bo=this.p?boost:(this.aiBoost>0);
+if(bo&&this.sc>10){this.sc-=.1;if(Math.random()<.3){let t=this.s[this.s.length-1];foods.push(new Food(t.x,t.y,1,this.skin.colors[0]))}}
+let sp=(bo&&this.sc>10)?6:3;
+let hd=this.s[0],nx=hd.x+Math.cos(this.a)*sp,ny=hd.y+Math.sin(this.a)*sp;
+if(nx<0||nx>W||ny<0||ny>W){this.die();return}
+this.s.unshift({x:nx,y:ny});
+for(let i=1;i<this.s.length;i++){
+let pv=this.s[i-1],cu=this.s[i],dd=D(pv,cu);
+if(dd>5){let aa=Math.atan2(cu.y-pv.y,cu.x-pv.x);cu.x=pv.x+Math.cos(aa)*5;cu.y=pv.y+Math.sin(aa)*5}}
+let ms=Math.floor(this.sc*1.5);
+if(this.s.length>ms)this.s.pop();
+for(let i=foods.length-1;i>=0;i--){
+let f=foods[i];
+if(D(hd,f)<this.r+f.r+5){this.sc+=f.v;this.r=Math.min(30,this.r+.05);foods.splice(i,1);if(this.p)$('sc').innerText=Math.floor(this.sc)}}
+for(let o of snakes){
+if(o===this||!o.al)continue;
+if(D(hd,o.s[0])>200)continue;
+for(let sg of o.s){if(D(hd,sg)<this.r+o.r-2){this.die();return}}}
+}
+die(){
+this.al=0;
+for(let i=0;i<this.s.length;i+=2){let sg=this.s[i];foods.push(new Food(sg.x+R(-10,10),sg.y+R(-10,10),3,this.skin.colors[0]))}
+if(this.p){over=1;$('fs').innerText=Math.floor(this.sc);$('gs').classList.remove('hide');$('ui').classList.add('hide');if(mob){$('joy').style.display='none';$('boost').style.display='none'}}
+else setTimeout(()=>{if(!over)this.reset()},2e3)}
+draw(){
+if(!this.al)return;
+const skin=this.skin;
+for(let i=this.s.length-1;i>=0;i--){
+let sg=this.s[i],sx=sg.x-cam.x,sy=sg.y-cam.y;
+if(sx<-50||sx>w+50||sy<-50||sy>h+50)continue;
+let r=i===0?this.r*1.2:this.r;
+if(skin.effect==='glow'){x.shadowBlur=15;x.shadowColor=skin.colors[0]}
+x.fillStyle=skin.colors[i%skin.colors.length];
+if(skin.effect==='wave'){let wave=Math.sin(this.t+i*0.2)*3;x.beginPath();x.arc(sx,sy+wave,r,0,7)}
+else{x.beginPath();x.arc(sx,sy,r,0,7)}
+x.fill();x.shadowBlur=0;
+if(i===0){
+x.fillStyle='white';let o=this.r*.5;
+x.beginPath();x.arc(sx+Math.cos(this.a-.5)*o,sy+Math.sin(this.a-.5)*o,3,0,7);x.fill();
+x.beginPath();x.arc(sx+Math.cos(this.a+.5)*o,sy+Math.sin(this.a+.5)*o,3,0,7);x.fill();
+}}}
+think(){
+if(this.p||!this.al)return;
+this.aiT--;
+if(this.aiT<=0){
+this.aiT=Math.floor(R(20,60));
+let hd=this.s[0],m=250;
+if(hd.x<m||hd.x>W-m||hd.y<m||hd.y>W-m){this.ta=Math.atan2(W/2-hd.y,W/2-hd.x);this.aiBoost=0;return}
+let cf=null,md=1/0;
+for(let f of foods){let d=D(hd,f);if(d<md&&d<400){md=d;cf=f}}
+if(cf){this.ta=Math.atan2(cf.y-hd.y,cf.x-hd.x);if(md>200&&this.sc>30&&Math.random()<0.3)this.aiBoost=30;else this.aiBoost=0;return}
+if(Math.random()<0.3)this.aiBoost=Math.floor(R(20,50));else this.aiBoost=0;
+this.ta+=R(-1,1);
+}
+if(this.aiBoost>0)this.aiBoost--;
+}
+}
+
+function init(){
+foods=[];snakes=[];mons=[];
+for(let i=0;i<FC;i++)foods.push(new Food);
+me=new Snake(1,selSkin,'我');snakes.push(me);
+for(let i=0;i<AC;i++)snakes.push(new Snake(0,Math.floor(Math.random()*4)));
+for(let i=0;i<MC;i++)mons.push(new Mon);
+}
+
+function loop(){
+if(!over){
+x.fillStyle='#0f0f1a';x.fillRect(0,0,w,h);
+x.strokeStyle='rgba(255,255,255,.05)';x.lineWidth=1;
+let gs=50,ox=-cam.x%gs,oy=-cam.y%gs;
+for(let i=ox;i<w;i+=gs){x.beginPath();x.moveTo(i,0);x.lineTo(i,h);x.stroke()}
+for(let i=oy;i<h;i+=gs){x.beginPath();x.moveTo(0,i);x.lineTo(w,i);x.stroke()}
+x.strokeStyle='rgba(255,71,87,.5)';x.lineWidth=3;
+x.strokeRect(-cam.x,-cam.y,W,W);
+for(let f of foods)f.draw();
+for(let m of mons){m.update();m.draw()}
+for(let s of snakes){s.think();s.update();s.draw()}
+cam.x=me.s[0].x-w/2;cam.y=me.s[0].y-h/2;
+cam.x=Math.max(0,Math.min(W-w,cam.x));cam.y=Math.max(0,Math.min(W-h,cam.y));
+if(Math.random()<.1)foods.push(new Food);
+while(foods.length<FC)foods.push(new Food);
+let sorted=[...snakes].filter(s=>s.al).sort((a,b)=>b.sc-a.sc).slice(0,5);
+$('rl').innerHTML=sorted.map((s,i)=>`<div class="ri${s.p?' me':''}"><span>${i+1}.${s.nm}</span><span>${Math.floor(s.sc)}</span></div>`).join('');
+}
+requestAnimationFrame(loop);
+}
+
+function start(){
+$('ss').classList.add('hide');$('gs').classList.add('hide');$('ui').classList.remove('hide');
+over=0;init();
+if(mob){$('joy').style.display='block';$('boost').style.display='flex';$('dh').innerHTML='手机：左摇杆方向 | 右按钮加速'}
+else{$('dh').innerHTML='电脑：鼠标控制方向 | 左键/空格加速'}
+loop();
+}
+
+document.querySelectorAll('.skin').forEach(el=>{
+el.onclick=()=>{document.querySelectorAll('.skin').forEach(e=>e.classList.remove('active'));el.classList.add('active');selSkin=parseInt(el.dataset.s)}
 });
-document.addEventListener('keyup', e => { if (e.key === ' ') isBoosting = false; });
 
-// 触屏摇杆
-const joy = document.getElementById('joy'), knob = document.getElementById('knob');
-let joyActive = false, joyId = null;
-joy.addEventListener('touchstart', e => {
-    joyActive = true; joyId = e.changedTouches[0].identifier;
-    handleJoy(e.changedTouches[0]);
-});
-joy.addEventListener('touchmove', e => {
-    if (!joyActive) return;
-    for (let t of e.changedTouches) if (t.identifier === joyId) handleJoy(t);
-});
-joy.addEventListener('touchend', () => {
-    joyActive = false; knob.style.transform = 'translate(-50%, -50%)';
-});
-function handleJoy(t) {
-    const rect = joy.getBoundingClientRect();
-    const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
-    const dx = t.clientX - cx, dy = t.clientY - cy;
-    const angle = Math.atan2(dy, dx);
-    knob.style.transform = `translate(calc(-50% + ${Math.cos(angle)*30}px), calc(-50% + ${Math.sin(angle)*30}px))`;
-    
-    if (Math.abs(dx) > Math.abs(dy)) {
-        if (dx > 0 && dir.x === 0) nextDir = {x:1, y:0};
-        else if (dx < 0 && dir.x === 0) nextDir = {x:-1, y:0};
-    } else {
-        if (dy > 0 && dir.y === 0) nextDir = {x:0, y:1};
-        else if (dy < 0 && dir.y === 0) nextDir = {x:0, y:-1};
-    }
+addEventListener('mousemove',e=>{if(!over&&!mob&&me&&me.al)me.ta=Math.atan2(e.clientY-h/2,e.clientX-w/2)});
+addEventListener('mousedown',e=>{if(!over&&!mob)boost=1});
+addEventListener('mouseup',()=>{boost=0});
+addEventListener('keydown',e=>{if(e.code==='Space'&&!over&&!mob){boost=1;e.preventDefault()}});
+addEventListener('keyup',e=>{if(e.code==='Space')boost=0});
+
+const joy=$('joy'),knob=$('knob'),bst=$('boost');
+joy.addEventListener('touchstart',e=>{e.preventDefault();jAct=1;jId=e.changedTouches[0].identifier;handleJoy(e.changedTouches[0])});
+joy.addEventListener('touchmove',e=>{e.preventDefault();for(let t of e.changedTouches)if(t.identifier===jId)handleJoy(t)});
+joy.addEventListener('touchend',e=>{for(let t of e.changedTouches)if(t.identifier===jId){jAct=0;jAng=0;knob.style.transform='translate(-50%,-50%)'}});
+function handleJoy(t){
+let r=joy.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+let dx=t.clientX-cx,dy=t.clientY-cy,d=Math.hypot(dx,dy);
+if(d>40){dx=dx/d*40;dy=dy/d*40}
+knob.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+if(d>10){jAng=Math.atan2(dy,dx);if(me&&me.al)me.ta=jAng}
 }
-document.getElementById('boostBtn').addEventListener('touchstart', () => isBoosting = true);
-document.getElementById('boostBtn').addEventListener('touchend', () => isBoosting = false);
-
-// --- 主循环 ---
-function loop(timestamp) {
-    if (gameOver) return;
-    
-    // 动态帧率控制
-    const delta = timestamp - lastTime;
-    if (delta < 1000 / targetFps) {
-        requestAnimationFrame(loop);
-        return;
-    }
-    lastTime = timestamp;
-    
-    // 性能监测 (简单版)
-    frameCount++;
-    if (timestamp - lastFpsTime > 1000) {
-        if (frameCount < 45 && targetFps === 60) targetFps = 45;
-        frameCount = 0; lastFpsTime = timestamp;
-    }
-
-    update();
-    draw();
-    requestAnimationFrame(loop);
-}
-
-function update() {
-    dir = nextDir;
-    const speed = isBoosting ? 30 : 15; // 加速时移动更快
-    const head = {x: snake[0].x + dir.x * speed, y: snake[0].y + dir.y * speed};
-
-    // 撞墙或撞自己
-    if (head.x < 0 || head.x >= w || head.y < 0 || head.y >= h || 
-        snake.some(s => s.x === head.x && s.y === head.y)) {
-        gameOver = true;
-        document.getElementById('gameOverScreen').classList.remove('hide');
-        document.getElementById('finalScore').innerText = score;
-        document.getElementById('ui').style.display = 'none';
-        document.getElementById('joy').style.display = 'none';
-        document.getElementById('boostBtn').style.display = 'none';
-        return;
-    }
-
-    snake.unshift(head);
-
-    // 吃食物
-    if (Math.abs(head.x - food.x) < gridSize && Math.abs(head.y - food.y) < gridSize) {
-        score += 5;
-        document.getElementById('score').innerText = score;
-        playTone(800, 0.1);
-        spawnFood();
-    } else {
-        snake.pop();
-    }
-}
-
-function draw() {
-    ctx.fillStyle = '#111';
-    ctx.fillRect(0, 0, w, h);
-
-    // 画食物
-    ctx.fillStyle = '#ff4757';
-    ctx.beginPath();
-    ctx.arc(food.x + gridSize/2, food.y + gridSize/2, gridSize/2, 0, Math.PI*2);
-    ctx.fill();
-
-    // 画蛇
-    snake.forEach((s, i) => {
-        ctx.fillStyle = i === 0 ? '#2ed573' : (isBoosting ? '#ffa502' : '#7bed9f');
-        ctx.fillRect(s.x, s.y, gridSize-2, gridSize-2);
-    });
-}
+bst.addEventListener('touchstart',e=>{e.preventDefault();boost=1});
+bst.addEventListener('touchend',e=>{e.preventDefault();boost=0});
 </script>
 </body>
 </html>
