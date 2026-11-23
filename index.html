@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>贪吃蛇大作战</title>
+<title>贪吃蛇大作战 - 拟人版</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{overflow:hidden;background:#0f0f1a;font-family:sans-serif;color:#fff;touch-action:none}
@@ -21,9 +21,9 @@ h1{font-size:36px;color:#2ed573;margin-bottom:15px}
 .btn:hover{background:#26af61}
 .hide{display:none!important}
 .hint{margin-top:15px;color:#888;font-size:12px;text-align:center;line-height:1.6}
-#joy{position:absolute;bottom:30px;left:30px;width:110px;height:110px;background:rgba(255,255,255,.1);border-radius:50%;border:2px solid rgba(255,255,255,.3);pointer-events:auto;display:none;z-index:5}
-#knob{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:45px;height:45px;background:rgba(46,213,115,.8);border-radius:50%}
-#boost{position:absolute;bottom:40px;right:30px;width:75px;height:75px;background:rgba(255,71,87,.6);border-radius:50%;border:2px solid rgba(255,255,255,.3);pointer-events:auto;display:none;z-index:5;align-items:center;justify-content:center;font-size:13px;font-weight:bold}
+#joy{position:absolute;bottom:30px;left:30px;width:120px;height:120px;background:rgba(255,255,255,.1);border-radius:50%;border:2px solid rgba(255,255,255,.3);pointer-events:auto;display:none;z-index:5}
+#knob{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:50px;height:50px;background:rgba(46,213,115,.8);border-radius:50%;transition:transform .05s}
+#boost{position:absolute;bottom:40px;right:30px;width:80px;height:80px;background:rgba(255,71,87,.6);border-radius:50%;border:2px solid rgba(255,255,255,.3);pointer-events:auto;display:none;z-index:5;align-items:center;justify-content:center;font-size:14px;font-weight:bold}
 </style>
 </head>
 <body>
@@ -51,10 +51,10 @@ h1{font-size:36px;color:#2ed573;margin-bottom:15px}
 <script>
 const c=document.getElementById('c'),x=c.getContext('2d');
 const $=id=>document.getElementById(id);
-const W=3000,FC=350,AC=8,MC=5;
+const W=3000,FC=400,AC=25,MC=5; // 增加AI数量到25
 let w,h,cam={x:0,y:0},foods=[],snakes=[],mons=[],me,over=1,boost=0;
 let mob=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-let jAct=0,jAng=0;
+let jAct=0,jAng=0,jId=null;
 
 function rs(){w=innerWidth;h=innerHeight;c.width=w;c.height=h}
 addEventListener('resize',rs);rs();
@@ -95,19 +95,20 @@ x.fillStyle='#2ed573';x.fillRect(sx-15,sy-r-12,30*(this.hp/3),5)}
 }
 
 class Snake{
-constructor(p=0,col=RC(),nm=""){this.p=p;this.col=col;this.nm=nm||(p?"我":`AI-${Math.floor(Math.random()*99)}`);this.reset()}
+constructor(p=0,col=RC(),nm=""){this.p=p;this.col=col;this.nm=nm||(p?"我":`玩家${Math.floor(Math.random()*9999)}`);this.reset()}
 reset(){
 this.s=[];let sx=R(200,W-200),sy=R(200,W-200);
 for(let i=0;i<10;i++)this.s.push({x:sx,y:sy});
-this.a=R(0,7);this.ta=this.a;this.sc=10;this.r=10;this.al=1}
+this.a=R(0,7);this.ta=this.a;this.sc=10;this.r=10;this.al=1;
+this.aiT=0;this.aiBoost=0} // AI状态
 update(){
 if(!this.al)return;
 let d=this.ta-this.a;
 while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;
-this.a+=d*.15;
-let bo=this.p?boost:(Math.random()<.01&&this.sc>20);
-let sp=(bo&&this.sc>10)?6:3;
+this.a+=d*(this.p?0.25:0.15); // 玩家转向更灵敏
+let bo=this.p?boost:(this.aiBoost>0);
 if(bo&&this.sc>10){this.sc-=.1;if(Math.random()<.3){let t=this.s[this.s.length-1];foods.push(new Food(t.x,t.y,1,this.col))}}
+let sp=(bo&&this.sc>10)?6:3;
 let hd=this.s[0],nx=hd.x+Math.cos(this.a)*sp,ny=hd.y+Math.sin(this.a)*sp;
 if(nx<0||nx>W||ny<0||ny>W){this.die();return}
 this.s.unshift({x:nx,y:ny});
@@ -140,16 +141,34 @@ x.arc(sx,sy,r,0,7);x.fill();
 if(i===0){x.fillStyle='white';let o=this.r*.5;
 x.beginPath();x.arc(sx+Math.cos(this.a-.5)*o,sy+Math.sin(this.a-.5)*o,3,0,7);x.fill();
 x.beginPath();x.arc(sx+Math.cos(this.a+.5)*o,sy+Math.sin(this.a+.5)*o,3,0,7);x.fill()}}}
+
+// 拟人化AI逻辑
 think(){
 if(this.p||!this.al)return;
-let hd=this.s[0],m=200;
-if(hd.x<m)this.ta=0;else if(hd.x>W-m)this.ta=Math.PI;
-else if(hd.y<m)this.ta=Math.PI/2;else if(hd.y>W-m)this.ta=-Math.PI/2;
-else{
+this.aiT--;
+if(this.aiT<=0){
+this.aiT=Math.floor(R(20,60)); // 每20-60帧重新决策
+let hd=this.s[0],m=250;
+// 1. 避墙优先
+if(hd.x<m||hd.x>W-m||hd.y<m||hd.y>W-m){
+this.ta=Math.atan2(W/2-hd.y,W/2-hd.x);
+this.aiBoost=0;return}
+// 2. 寻找食物
 let cf=null,md=1/0;
-for(let f of foods){let d=D(hd,f);if(d<md&&d<300){md=d;cf=f}}
-if(cf)this.ta=Math.atan2(cf.y-hd.y,cf.x-hd.x);
-else{if(Math.random()<.05)this.ta+=R(-.3,.3)}}}
+for(let f of foods){let d=D(hd,f);if(d<md&&d<400){md=d;cf=f}}
+if(cf){
+this.ta=Math.atan2(cf.y-hd.y,cf.x-hd.x);
+// 如果食物很远且自己够长，偶尔加速抢食
+if(md>200&&this.sc>30&&Math.random()<0.3)this.aiBoost=30;
+else this.aiBoost=0;
+return}
+// 3. 随机游走/躲避
+if(Math.random()<0.3)this.aiBoost=Math.floor(R(20,50)); // 随机加速
+else this.aiBoost=0;
+this.ta+=R(-1,1); // 随机转向
+}
+if(this.aiBoost>0)this.aiBoost--;
+}
 }
 
 function init(){
@@ -198,25 +217,48 @@ c.addEventListener('mouseup',()=>{if(!mob)boost=0});
 addEventListener('keydown',e=>{if(e.code==='Space'&&!mob)boost=1});
 addEventListener('keyup',e=>{if(e.code==='Space'&&!mob)boost=0});
 
-// 触屏摇杆
+// 触屏摇杆 - 灵敏度强化版
 let jx,jy;
 $('joy').addEventListener('touchstart',e=>{
-e.preventDefault();jAct=1;
-let t=e.touches[0],r=$('joy').getBoundingClientRect();
+e.preventDefault();
+let t=e.changedTouches[0];
+if(jId!==null)return; // 已经有一根手指在控制
+jId=t.identifier;jAct=1;
+let r=$('joy').getBoundingClientRect();
 jx=r.left+r.width/2;jy=r.top+r.height/2;
-});
+},{passive:false});
+
 addEventListener('touchmove',e=>{
 if(!jAct)return;
-let t=e.touches[0],dx=t.clientX-jx,dy=t.clientY-jy;
-let d=Math.hypot(dx,dy),max=55;
-if(d>max){dx=dx/d*max;dy=dy/d*max}
+let t=Array.from(e.touches).find(tt=>tt.identifier===jId);
+if(!t)return;
+let dx=t.clientX-jx,dy=t.clientY-jy;
+let d=Math.hypot(dx,dy),max=60;
+// 死区过滤：小于10像素不响应，防止手抖
+if(d<10){dx=0;dy=0;d=0}
+else{
+// 非线性响应曲线：小幅移动更灵敏，大幅移动平滑
+let ratio=d/max;
+if(ratio>1)ratio=1;
+let sens=Math.pow(ratio,0.7); // 指数小于1，提升小幅度灵敏度
+dx=(dx/d)*sens*max;
+dy=(dy/d)*sens*max;
+}
 $('knob').style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
-if(d>10){jAng=Math.atan2(dy,dx);if(!over)me.ta=jAng}
+if(d>15){ // 超过死区才改变方向
+jAng=Math.atan2(t.clientY-jy,t.clientX-jx);
+if(!over)me.ta=jAng;
+}
+},{passive:false});
+
+addEventListener('touchend',e=>{
+let t=Array.from(e.changedTouches).find(tt=>tt.identifier===jId);
+if(t){
+jAct=0;jId=null;
+$('knob').style.transform='translate(-50%,-50%)';
+}
 });
-addEventListener('touchend',()=>{
-jAct=0;$('knob').style.transform='translate(-50%,-50%)';
-});
-$('boost').addEventListener('touchstart',e=>{e.preventDefault();boost=1});
+$('boost').addEventListener('touchstart',e=>{e.preventDefault();boost=1},{passive:false});
 $('boost').addEventListener('touchend',()=>{boost=0});
 
 loop();
