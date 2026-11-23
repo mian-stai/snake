@@ -3,68 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>贪吃蛇大作战 - Web版</title>
+    <title>贪吃蛇大作战 - 竞技场版</title>
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; background-color: #1a1a2e; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background-color: #0f0f1a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #fff; }
         canvas { display: block; }
-        #ui-layer {
+        
+        /* UI 层通用样式 */
+        .ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; display: flex; flex-direction: column;
-            justify-content: space-between; padding: 20px; box-sizing: border-box;
+            justify-content: space-between; padding: 20px;
         }
+
+        /* 计分板与排行榜 */
+        .top-bar { display: flex; justify-content: space-between; align-items: flex-start; }
         .score-panel {
-            background: rgba(0, 0, 0, 0.5); color: #fff; padding: 10px 20px;
-            border-radius: 10px; width: fit-content; font-size: 18px; font-weight: bold;
-            backdrop-filter: blur(5px);
+            background: rgba(0, 0, 0, 0.6); padding: 15px 25px;
+            border-radius: 12px; font-size: 20px; font-weight: bold;
+            backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1);
         }
-        #game-over-screen {
+        .rank-panel {
+            background: rgba(0, 0, 0, 0.6); padding: 15px;
+            border-radius: 12px; width: 220px;
+            backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1);
+        }
+        .rank-panel h3 { font-size: 16px; margin-bottom: 10px; text-align: center; color: #ffd700; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px;}
+        .rank-item { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 6px; padding: 4px 8px; border-radius: 4px; }
+        .rank-item.me { background: rgba(46, 213, 115, 0.3); color: #2ed573; font-weight: bold; }
+        .rank-color { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+
+        /* 开始与结束界面 */
+        .screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.8); display: none; flex-direction: column;
-            align-items: center; justify-content: center; color: white; pointer-events: auto;
+            background: rgba(15, 15, 26, 0.9); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; pointer-events: auto; z-index: 10;
         }
-        h1 { font-size: 48px; margin-bottom: 10px; color: #ff4757; text-shadow: 0 0 10px rgba(255, 71, 87, 0.5); }
-        p { font-size: 24px; margin-bottom: 30px; }
-        button {
-            padding: 15px 40px; font-size: 20px; background: #2ed573; color: white;
-            border: none; border-radius: 30px; cursor: pointer; transition: transform 0.2s;
-            font-weight: bold; box-shadow: 0 5px 15px rgba(46, 213, 115, 0.4);
+        h1 { font-size: 56px; margin-bottom: 10px; background: linear-gradient(45deg, #2ed573, #1e90ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 20px rgba(46, 213, 115, 0.4); }
+        p.subtitle { font-size: 18px; color: #a4b0be; margin-bottom: 40px; }
+        .btn {
+            padding: 15px 50px; font-size: 22px; background: #2ed573; color: #fff;
+            border: none; border-radius: 30px; cursor: pointer; transition: all 0.3s;
+            font-weight: bold; box-shadow: 0 5px 20px rgba(46, 213, 115, 0.4); margin: 10px;
         }
-        button:hover { transform: scale(1.05); background: #26af61; }
-        .controls-hint {
-            position: absolute; bottom: 20px; width: 100%; text-align: center;
-            color: rgba(255,255,255,0.5); font-size: 14px;
-        }
+        .btn:hover { transform: translateY(-3px); background: #26af61; box-shadow: 0 8px 25px rgba(46, 213, 115, 0.6); }
+        .btn-secondary { background: #57606f; box-shadow: 0 5px 20px rgba(87, 96, 111, 0.4); }
+        .btn-secondary:hover { background: #485460; }
+        
+        .controls-hint { position: absolute; bottom: 30px; text-align: center; color: #747d8c; font-size: 14px; line-height: 1.6; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
     <canvas id="gameCanvas"></canvas>
 
-    <div id="ui-layer">
-        <div class="score-panel">长度: <span id="score">10</span></div>
+    <!-- 游戏内 UI -->
+    <div class="ui-layer" id="gameUI" style="display: none;">
+        <div class="top-bar">
+            <div class="score-panel">长度: <span id="score">10</span></div>
+            <div class="rank-panel">
+                <h3> 实时排行榜</h3>
+                <div id="rankList"></div>
+            </div>
+        </div>
         <div class="controls-hint">移动鼠标控制方向 | 按住鼠标左键或空格键加速</div>
     </div>
 
-    <div id="game-over-screen">
-        <h1>游戏结束</h1>
-        <p>最终长度: <span id="final-score">0</span></p>
-        <button onclick="resetGame()">再来一局</button>
+    <!-- 开始界面 -->
+    <div class="screen" id="startScreen">
+        <h1>贪吃蛇大作战</h1>
+        <p class="subtitle">吞噬光点，围杀对手，成为最长蛇王！</p>
+        <button class="btn" onclick="startGame()">开始游戏</button>
+        <div class="controls-hint">
+            提示：AI 也会互相残杀，小心被大蛇围堵！
+        </div>
+    </div>
+
+    <!-- 游戏结束界面 -->
+    <div class="screen hidden" id="gameOverScreen">
+        <h1 style="color: #ff4757; -webkit-text-fill-color: #ff4757;">游戏结束</h1>
+        <p class="subtitle">最终长度: <span id="finalScore" style="color: #fff; font-weight: bold;">0</span></p>
+        <button class="btn" onclick="startGame()">再来一局</button>
+        <button class="btn btn-secondary" onclick="backToMenu()">返回主菜单</button>
     </div>
 
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const scoreEl = document.getElementById('score');
-    const gameOverScreen = document.getElementById('game-over-screen');
-    const finalScoreEl = document.getElementById('final-score');
+    const rankListEl = document.getElementById('rankList');
+    const startScreen = document.getElementById('startScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const gameUI = document.getElementById('gameUI');
+    const finalScoreEl = document.getElementById('finalScore');
 
     // 配置参数
     const CONFIG = {
-        WORLD_SIZE: 3000,
-        FOOD_COUNT: 400,
-        AI_COUNT: 5,
-        SNAKE_SPEED: 3,
-        BOOST_SPEED: 6,
+        WORLD_SIZE: 4000,
+        FOOD_COUNT: 600,
+        AI_COUNT: 15, // 增加 AI 数量
+        SNAKE_SPEED: 3.5,
+        BOOST_SPEED: 7,
         SEGMENT_DIST: 5,
         BASE_RADIUS: 10
     };
@@ -75,7 +115,8 @@
     let snakes = [];
     let player;
     let animationId;
-    let isGameOver = false;
+    let isGameOver = true;
+    let lastRankUpdate = 0;
 
     // 调整画布大小
     function resize() {
@@ -90,7 +131,7 @@
     // 工具函数
     const random = (min, max) => Math.random() * (max - min) + min;
     const dist = (p1, p2) => Math.hypot(p1.x - p2.x, p1.y - p2.y);
-    const randomColor = () => `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`;
+    const randomColor = () => `hsl(${Math.floor(Math.random() * 360)}, 80%, 60%)`;
 
     // 食物类
     class Food {
@@ -102,51 +143,55 @@
             this.radius = Math.sqrt(value) * 3 + 2;
         }
         draw() {
+            let screenX = this.x - camera.x;
+            let screenY = this.y - camera.y;
+            if (screenX < -20 || screenX > width + 20 || screenY < -20 || screenY > height + 20) return;
+            
             ctx.fillStyle = this.color;
             ctx.beginPath();
-            ctx.arc(this.x - camera.x, this.y - camera.y, this.radius, 0, Math.PI * 2);
+            ctx.arc(screenX, screenY, this.radius, 0, Math.PI * 2);
             ctx.fill();
         }
     }
 
     // 蛇类
     class Snake {
-        constructor(isPlayer = false, color = randomColor()) {
+        constructor(isPlayer = false, color = randomColor(), name = "") {
             this.isPlayer = isPlayer;
             this.color = color;
+            this.name = name || (isPlayer ? "我" : `AI-${Math.floor(Math.random()*1000)}`);
             this.reset();
         }
 
         reset() {
             this.segments = [];
-            let startX = random(100, CONFIG.WORLD_SIZE - 100);
-            let startY = random(100, CONFIG.WORLD_SIZE - 100);
+            let startX = random(200, CONFIG.WORLD_SIZE - 200);
+            let startY = random(200, CONFIG.WORLD_SIZE - 200);
             for (let i = 0; i < 10; i++) {
                 this.segments.push({ x: startX, y: startY });
             }
             this.angle = random(0, Math.PI * 2);
             this.targetAngle = this.angle;
-            this.speed = CONFIG.SNAKE_SPEED;
             this.isBoosting = false;
             this.radius = CONFIG.BASE_RADIUS;
             this.score = 10;
+            this.alive = true;
         }
 
         update() {
-            if (this.isPlayer && isGameOver) return;
+            if (!this.alive) return;
 
             // 平滑转向
             let angleDiff = this.targetAngle - this.angle;
             while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
             while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-            this.angle += angleDiff * 0.1;
+            this.angle += angleDiff * 0.15;
 
             // 加速逻辑
             let currentSpeed = this.isBoosting && this.score > 10 ? CONFIG.BOOST_SPEED : CONFIG.SNAKE_SPEED;
             if (this.isBoosting && this.score > 10 && Math.random() < 0.2) {
                 this.score -= 1;
                 this.radius = Math.max(CONFIG.BASE_RADIUS, this.radius - 0.05);
-                // 掉落食物
                 let tail = this.segments[this.segments.length - 1];
                 foods.push(new Food(tail.x, tail.y, 1, this.color));
             }
@@ -186,9 +231,9 @@
             // 吃食物
             for (let i = foods.length - 1; i >= 0; i--) {
                 let f = foods[i];
-                if (dist(head, f) < this.radius + f.radius) {
+                if (dist(head, f) < this.radius + f.radius + 5) { // 增加一点吸附范围
                     this.score += f.value;
-                    this.radius = Math.min(30, this.radius + 0.05);
+                    this.radius = Math.min(35, this.radius + 0.05);
                     foods.splice(i, 1);
                     if (this.isPlayer) scoreEl.innerText = this.score;
                 }
@@ -196,7 +241,10 @@
 
             // 碰撞检测 (撞别人)
             for (let other of snakes) {
-                if (other === this) continue;
+                if (other === this || !other.alive) continue;
+                // 优化碰撞检测：只检测距离较近的蛇
+                if (dist(head, other.segments[0]) > 300) continue; 
+                
                 for (let seg of other.segments) {
                     if (dist(head, seg) < this.radius + other.radius - 2) {
                         this.die();
@@ -207,34 +255,39 @@
         }
 
         die() {
-            // 死亡掉落食物
+            this.alive = false;
+            // 死亡掉落大量食物
             for (let i = 0; i < this.segments.length; i += 2) {
                 let seg = this.segments[i];
-                foods.push(new Food(seg.x, seg.y, 3, this.color));
+                foods.push(new Food(seg.x + random(-10,10), seg.y + random(-10,10), 4, this.color));
             }
+            
             if (this.isPlayer) {
                 isGameOver = true;
                 finalScoreEl.innerText = this.score;
-                gameOverScreen.style.display = 'flex';
+                gameOverScreen.classList.remove('hidden');
+                gameUI.style.display = 'none';
             } else {
-                // AI复活
-                this.reset();
+                // AI 延迟复活
+                setTimeout(() => {
+                    if(!isGameOver) this.reset();
+                }, 3000);
             }
         }
 
         draw() {
+            if (!this.alive) return;
+
             // 绘制身体
             for (let i = this.segments.length - 1; i >= 0; i--) {
                 let seg = this.segments[i];
                 let screenX = seg.x - camera.x;
                 let screenY = seg.y - camera.y;
                 
-                // 简单的视锥剔除
                 if (screenX < -50 || screenX > width + 50 || screenY < -50 || screenY > height + 50) continue;
 
                 ctx.fillStyle = this.color;
                 ctx.beginPath();
-                // 头部稍微大一点
                 let r = i === 0 ? this.radius * 1.2 : this.radius;
                 ctx.arc(screenX, screenY, r, 0, Math.PI * 2);
                 ctx.fill();
@@ -249,54 +302,85 @@
                     let eyeY2 = screenY + Math.sin(this.angle + 0.5) * eyeOffset;
                     ctx.beginPath(); ctx.arc(eyeX1, eyeY1, 3, 0, Math.PI*2); ctx.fill();
                     ctx.beginPath(); ctx.arc(eyeX2, eyeY2, 3, 0, Math.PI*2); ctx.fill();
+                    
+                    // 画名字
+                    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                    ctx.font = '12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(this.name, screenX, screenY - this.radius - 10);
                 }
             }
         }
 
-        // 简单的AI逻辑
+        // 高级 AI 逻辑：包含互相残杀
         think() {
-            if (this.isPlayer) return;
+            if (this.isPlayer || !this.alive) return;
             
             let head = this.segments[0];
             let danger = false;
             let avoidAngle = 0;
+            let huntTarget = null;
 
             // 1. 躲避墙壁
-            const margin = 200;
+            const margin = 300;
             if (head.x < margin) { this.targetAngle = 0; danger = true; }
             else if (head.x > CONFIG.WORLD_SIZE - margin) { this.targetAngle = Math.PI; danger = true; }
             else if (head.y < margin) { this.targetAngle = Math.PI / 2; danger = true; }
             else if (head.y > CONFIG.WORLD_SIZE - margin) { this.targetAngle = -Math.PI / 2; danger = true; }
 
-            // 2. 躲避其他蛇
+            // 2. 躲避其他蛇 & 寻找猎杀目标
             if (!danger) {
                 for (let other of snakes) {
-                    if (other === this) continue;
-                    for (let seg of other.segments) {
-                        let d = dist(head, seg);
-                        if (d < 100) {
-                            danger = true;
-                            avoidAngle = Math.atan2(head.y - seg.y, head.x - seg.x);
-                            break;
+                    if (other === this || !other.alive) continue;
+                    
+                    let d = dist(head, other.segments[0]);
+                    
+                    // 躲避危险
+                    if (d < 150) {
+                        for (let seg of other.segments) {
+                            let segDist = dist(head, seg);
+                            if (segDist < 100) {
+                                danger = true;
+                                avoidAngle = Math.atan2(head.y - seg.y, head.x - seg.x);
+                                break;
+                            }
                         }
                     }
-                    if (danger) break;
+                    
+                    // 猎杀逻辑：如果对方比我小很多，且距离适中，尝试撞击其身体
+                    if (this.score > other.score * 1.5 && d < 400 && d > 50) {
+                        // 预测对方头部位置，试图拦截
+                        let predictX = other.segments[0].x + Math.cos(other.angle) * 50;
+                        let predictY = other.segments[0].y + Math.sin(other.angle) * 50;
+                        // 检查是否在我的前方
+                        let angleToTarget = Math.atan2(predictY - head.y, predictX - head.x);
+                        let angleDiff = Math.abs(angleToTarget - this.angle);
+                        if (angleDiff < Math.PI / 4 || angleDiff > Math.PI * 1.75) {
+                            huntTarget = { x: predictX, y: predictY };
+                        }
+                    }
                 }
             }
 
             if (danger) {
                 this.targetAngle = avoidAngle || this.targetAngle;
-                this.isBoosting = Math.random() < 0.1; // 偶尔加速逃跑
+                this.isBoosting = Math.random() < 0.2; // 危险时加速逃跑
+            } else if (huntTarget) {
+                // 执行猎杀
+                this.targetAngle = Math.atan2(huntTarget.y - head.y, huntTarget.x - head.x);
+                this.isBoosting = Math.random() < 0.3; // 猎杀时偶尔加速
             } else {
                 // 3. 寻找食物
                 let closestFood = null;
                 let minDist = Infinity;
-                for (let f of foods) {
+                // 优化：只遍历部分食物，避免性能问题
+                for (let i = 0; i < foods.length; i += 3) {
+                    let f = foods[i];
                     let d = dist(head, f);
                     if (d < minDist) { minDist = d; closestFood = f; }
                 }
                 
-                if (closestFood) {
+                if (closestFood && minDist < 600) {
                     this.targetAngle = Math.atan2(closestFood.y - head.y, closestFood.x - head.x);
                 } else {
                     // 随机游走
@@ -307,103 +391,28 @@
         }
     }
 
+    // 更新排行榜
+    function updateRanking() {
+        let sortedSnakes = snakes.filter(s => s.alive).sort((a, b) => b.score - a.score).slice(0, 5);
+        let html = '';
+        sortedSnakes.forEach((s, index) => {
+            let meClass = s.isPlayer ? 'me' : '';
+            html += `<div class="rank-item ${meClass}">
+                        <span><span class="rank-color" style="background:${s.color}"></span>${index + 1}. ${s.name}</span>
+                        <span>${s.score}</span>
+                     </div>`;
+        });
+        rankListEl.innerHTML = html;
+    }
+
     // 初始化游戏
     function init() {
         foods = [];
         snakes = [];
         isGameOver = false;
-        gameOverScreen.style.display = 'none';
         
-        // 生成食物
-        for (let i = 0; i < CONFIG.FOOD_COUNT; i++) {
-            foods.push(new Food());
-        }
+        // 生成
 
-        // 生成玩家
-        player = new Snake(true, '#2ed573');
-        snakes.push(player);
-
-        // 生成AI
-        for (let i = 0; i < CONFIG.AI_COUNT; i++) {
-            snakes.push(new Snake(false));
-        }
-
-        scoreEl.innerText = player.score;
-        if (animationId) cancelAnimationFrame(animationId);
-        loop();
-    }
-
-    // 游戏主循环
-    function loop() {
-        if (isGameOver) return;
-
-        // 更新相机
-        camera.x = player.segments[0].x - width / 2;
-        camera.y = player.segments[0].y - height / 2;
-
-        // 绘制背景网格
-        ctx.fillStyle = '#1a1a2e';
-        ctx.fillRect(0, 0, width, height);
-        
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-        ctx.lineWidth = 1;
-        const gridSize = 50;
-        const offsetX = -camera.x % gridSize;
-        const offsetY = -camera.y % gridSize;
-        
-        ctx.beginPath();
-        for (let x = offsetX; x < width; x += gridSize) { ctx.moveTo(x, 0); ctx.lineTo(x, height); }
-        for (let y = offsetY; y < height; y += gridSize) { ctx.moveTo(0, y); ctx.lineTo(width, y); }
-        ctx.stroke();
-
-        // 绘制边界
-        ctx.strokeStyle = 'red';
-        ctx.lineWidth = 5;
-        ctx.strokeRect(-camera.x, -camera.y, CONFIG.WORLD_SIZE, CONFIG.WORLD_SIZE);
-
-        // 更新和绘制实体
-        foods.forEach(f => f.draw());
-        
-        snakes.forEach(s => {
-            s.think();
-            s.update();
-            s.draw();
-        });
-
-        // 补充食物
-        while (foods.length < CONFIG.FOOD_COUNT) {
-            foods.push(new Food());
-        }
-
-        animationId = requestAnimationFrame(loop);
-    }
-
-    // 输入控制
-    window.addEventListener('mousemove', (e) => {
-        if (!player || isGameOver) return;
-        let head = player.segments[0];
-        let mouseX = e.clientX + camera.x;
-        let mouseY = e.clientY + camera.y;
-        player.targetAngle = Math.atan2(mouseY - head.y, mouseX - head.x);
-    });
-
-    window.addEventListener('mousedown', () => { if(player) player.isBoosting = true; });
-    window.addEventListener('mouseup', () => { if(player) player.isBoosting = false; });
-    
-    window.addEventListener('keydown', (e) => {
-        if (e.code === 'Space') { if(player) player.isBoosting = true; e.preventDefault(); }
-    });
-    window.addEventListener('keyup', (e) => {
-        if (e.code === 'Space') { if(player) player.isBoosting = false; }
-    });
-
-    function resetGame() {
-        init();
-    }
-
-    // 启动
-    init();
-
-</script>
-</body>
-</html>
+---
+代码因长度限制被截断，需要我为你补全剩余的初始化与主循环代码，并整理一份完整的可直接运行的文件吗？
+<websource>inline_action_reply_1</websource>
